@@ -119,6 +119,8 @@ internal class Program
         public Guid OrderId { get; set; } // Свойство для идентификатора заказа
         public double Total { get; set; } // Свойство для общей суммы заказа
         public DateTime CreatedAt { get; set; } // Свойство для даты и времени создания заказа
-
     }
+
+    public delegate Task AsyncMessageHandler(object sender, BasicDeliverEventArgs eventArgs);
+
 }

@@ -34,7 +34,7 @@ internal class Program
             Console.ReadLine();
         }
         // Example two
-        await JsonExample();
+        await JsonExample2();
     }
     private static async Task JsonExample()
     {
@@ -71,12 +71,54 @@ internal class Program
         Console.WriteLine("Waiting for messages...");
         Console.ReadLine();
     }
-}
 
-public class OrderPlaced
-{
-    public Guid OrderId { get; set; } // Свойство для идентификатора заказа
-    public double Total { get; set; } // Свойство для общей суммы заказа
-    public DateTime CreatedAt { get; set; } // Свойство для даты и времени создания заказа
+    private static async Task JsonExample2()
+    {
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+        using var connection = await factory.CreateConnectionAsync();
+        using var channel = await connection.CreateChannelAsync();
 
+        // Declare (or check) the queue to consume from
+        await channel.QueueDeclareAsync(
+            queue: "orders",
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null);
+
+        Console.WriteLine("Waiting for messages...");
+
+        while (true)
+        {
+            // Получение одного сообщения
+            var result = await channel.BasicGetAsync("orders", autoAck: false);
+            if (result != null)
+            {
+                byte[] body = result.Body.ToArray();
+                string message = Encoding.UTF8.GetString(body);
+                var orderPlaced = JsonSerializer.Deserialize<OrderPlaced>(message);
+
+                Console.WriteLine($"Received: OrderPlaced - {orderPlaced?.OrderId} - {orderPlaced?.Total} - {orderPlaced?.CreatedAt}");
+
+                // Acknowledge the message
+                await channel.BasicAckAsync(result.DeliveryTag, multiple: false);
+                await Console.Out.WriteLineAsync("Отправлено Ack");
+            }
+            else
+            {
+                Console.WriteLine("No messages available. Waiting...");
+            }
+
+            // Задержка перед следующим запросом
+            await Task.Delay(1000); // Задержка в 1 секунду
+        }
+    }
+
+    public class OrderPlaced
+    {
+        public Guid OrderId { get; set; } // Свойство для идентификатора заказа
+        public double Total { get; set; } // Свойство для общей суммы заказа
+        public DateTime CreatedAt { get; set; } // Свойство для даты и времени создания заказа
+
+    }
 }

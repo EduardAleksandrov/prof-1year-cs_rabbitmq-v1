@@ -8,7 +8,7 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
         using (var connection = await factory.CreateConnectionAsync())
         using (var channel = await connection.CreateChannelAsync())
         {
@@ -38,7 +38,7 @@ internal class Program
     }
     private static async Task JsonExample()
     {
-        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
         using var connection = await factory.CreateConnectionAsync();
         using var channel = await connection.CreateChannelAsync();
 
@@ -74,7 +74,7 @@ internal class Program
 
     private static async Task JsonExample2()
     {
-        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest" };
+        var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
         using var connection = await factory.CreateConnectionAsync();
         using var channel = await connection.CreateChannelAsync();
 

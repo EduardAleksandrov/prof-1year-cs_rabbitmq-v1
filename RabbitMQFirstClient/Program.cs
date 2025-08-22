@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 internal class Program
 {
+// Push method because autoAck might be true, now is false
     private static async Task Main(string[] args)
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
@@ -17,6 +18,8 @@ internal class Program
                                             exclusive: false,
                                             autoDelete: false,
                                             arguments: null);
+
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += async (sender, eventArgs) =>
@@ -36,6 +39,7 @@ internal class Program
         // Example two
         await JsonExample2();
     }
+// Pull method because autoAck is false
     private static async Task JsonExample()
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
@@ -71,7 +75,7 @@ internal class Program
         Console.WriteLine("Waiting for messages...");
         Console.ReadLine();
     }
-
+// Pull method because autoAck is false
     private static async Task JsonExample2()
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };

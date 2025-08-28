@@ -11,6 +11,7 @@ internal class Program
         using (var connection = await factory.CreateConnectionAsync())
         using (var channel = await connection.CreateChannelAsync())
         {
+            // в канале может быть объявлено несколько очередей
             await channel.QueueDeclareAsync(queue: "hello",
                                             durable: false,
                                             exclusive: false,

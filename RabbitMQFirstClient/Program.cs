@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 internal class Program
 {
-// Push method because autoAck might be true, now is false
+    // Push method because autoAck might be true, now is false
     private static async Task Main(string[] args)
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
@@ -38,8 +38,15 @@ internal class Program
         }
         // Example two
         await JsonExample2();
+
+        // Example three with object
+        // using (var consumer = new RabbitMqConsumer("localhost", "guest", "guest", "/"))
+        // {
+        //     await consumer.StartConsumingAsync("hello");
+        //     Console.ReadLine(); // Keep the application running
+        // }
     }
-// Pull method because autoAck is false
+    // Pull method because autoAck is false
     private static async Task JsonExample()
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
@@ -75,7 +82,7 @@ internal class Program
         Console.WriteLine("Waiting for messages...");
         Console.ReadLine();
     }
-// Pull method because autoAck is false
+    // Pull method because autoAck is false
     private static async Task JsonExample2()
     {
         var factory = new ConnectionFactory() { HostName = "localhost", UserName = "guest", Password = "guest", VirtualHost = "/" };
@@ -126,5 +133,67 @@ internal class Program
     }
 
     public delegate Task AsyncMessageHandler(object sender, BasicDeliverEventArgs eventArgs);
+    
+    public class RabbitMqConsumer : IDisposable
+    {
+        private readonly ConnectionFactory _factory;
+        private IConnection? _connection;
+        private IChannel? _channel;
+        private AsyncEventingBasicConsumer? _consumer;
+
+        public RabbitMqConsumer(string hostName, string userName, string password, string virtualHost)
+        {
+            _factory = new ConnectionFactory()
+            {
+                HostName = hostName,
+                UserName = userName,
+                Password = password,
+                VirtualHost = virtualHost
+            };
+
+            _connection = null;
+            _channel = null;
+
+            _consumer = null;
+        }
+
+        public async Task StartConsumingAsync(string queueName)
+        {
+            _connection = await _factory.CreateConnectionAsync();
+            _channel = await _connection.CreateChannelAsync();
+            
+            await _channel.QueueDeclareAsync(queue: queueName,
+                                                    durable: false,
+                                                    exclusive: false,
+                                                    autoDelete: false,
+                                                    arguments: null);
+
+            await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+
+            _consumer = new AsyncEventingBasicConsumer(_channel);
+            _consumer.ReceivedAsync += OnMessageReceived;
+
+            await _channel.BasicConsumeAsync(queue: queueName,
+                                            autoAck: false,
+                                            consumer: _consumer);
+
+            Console.WriteLine("Waiting for messages...");
+        }
+
+        private async Task OnMessageReceived(object sender, BasicDeliverEventArgs eventArgs)
+        {
+            var body = eventArgs.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            Console.WriteLine($" [x] Received {message}");
+            // Acknowledge the message
+            await _channel!.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
+        }
+
+        public void Dispose()
+        {
+            _channel?.Dispose();
+            _connection?.Dispose();
+        }
+    }
 
 }
